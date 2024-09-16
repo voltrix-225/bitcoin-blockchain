@@ -1,0 +1,39 @@
+from flask import Flask, render_template, request
+from client.sendBTC import SendBTC
+from Backend.core.transaction import Txn
+
+app = Flask(__name__)
+
+@app.route('/', methods = ["GET","POST"])
+def wallet():
+    message = ''
+    if request.method == "POST":
+        FromAddress = request.form.get("fromAddress")
+        ToAddress = request.form.get("toAddress")
+        Amount = request.form.get("Amount", type = int)
+        sendCoin = SendBTC(FromAddress, ToAddress, Amount, UTXOS)
+        TxObj =  sendCoin.prepareTransaction()
+
+        scriptPubKey = sendCoin.scriptPublicKey(FromAddress)
+        verified = True
+
+        if not TxObj:
+            message = "Invalid Transaction"
+
+        if isinstance(TxObj, Txn):
+            for index, tx in enumerate(TxObj.txn_ins):
+                if not TxObj.verify_input(index, scriptPubKey):
+                    verified = False
+                
+                if verified:
+                    MEMPOOL[TxObj.TxID] = TxObj
+                    message = "Transaction is added in Memory Pool"
+    
+    return render_template('wallet.html', message = message)
+
+def main(utxos, MemPool):
+    global UTXOS
+    global MEMPOOL
+    UTXOS = utxos
+    MEMPOOL = MemPool
+    app.run()
